@@ -2,17 +2,11 @@ package com.sadanand.httpConnection.httpClient;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.nio.charset.Charset;
-
 import javax.net.ssl.SSLSocketFactory;
 
-import org.apache.commons.codec.Charsets;
-import org.apache.http.HttpHost;
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.config.ConnectionConfig;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.config.SocketConfig;
-import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -62,7 +56,7 @@ public class HttpClientHandler {
         int connectionLimit = 1000;
         manager.setMaxTotal(connectionLimit);
 		manager.setDefaultMaxPerRoute(connectionLimit);
-		HttpHost host = new HttpHost("http://localhost/", 80);
+		//HttpHost host = new HttpHost("http://localhost/", 80);
 		//manager.setMaxPerRoute(new HttpRoute(host), connectionLimit);
 		
 		cleanup = new IdleConnectionMonitorThread(manager);

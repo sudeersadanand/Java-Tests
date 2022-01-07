@@ -11,14 +11,19 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.sadanand.httpConnection.Pooling.PooledHttpConnectionManagerTestApplication;
+
 @Component
 @Scope("prototype")
 public class MultiHttpClientConnThread extends Thread {
+	private static final Logger log = LogManager.getLogger(PooledHttpConnectionManagerTestApplication.class);
+
     private CloseableHttpClient client;
     private HttpGet get;
     private static int runningThreads = 0;
@@ -35,36 +40,47 @@ public class MultiHttpClientConnThread extends Thread {
     
     // standard constructors
     public void run(){
-        try {
-        	runningThreads ++;
-    		this.client = this.handler.getClient();
-    		this.get = new HttpGet("http://localhost/");
+    	boolean shouldRetry = true;
+    	int retryCount = 0;
+    	while (shouldRetry) {
+    		try {
+    			runningThreads ++;
+    			this.client = this.handler.getClient();
+    			this.get = new HttpGet("http://localhost:8080/hello/20000");
 
-        	HttpResponse response = client.execute(get);
-            //System.out.println("Thread " + Thread.currentThread().getName() + " Response:" + response.getStatusLine());
-        	HttpEntity entity = response.getEntity(); 
-        	InputStream is = entity.getContent(); // Create an InputStream with the response
-        	BufferedReader reader = new BufferedReader(new InputStreamReader(is, "iso-8859-1"), 8);
-        	StringBuilder sb = new StringBuilder();
-        	String line = null;
-        	while ((line = reader.readLine()) != null) // Read line by line
-        	  sb.append(line + "\n");
+    			HttpResponse response = client.execute(get);
 
-        	String resString = sb.toString(); // Result is here
+    			HttpEntity entity = response.getEntity(); 
+    			InputStream is = entity.getContent(); // Create an InputStream with the response
+    			BufferedReader reader = new BufferedReader(new InputStreamReader(is, "iso-8859-1"), 8);
+    			StringBuilder sb = new StringBuilder();
+    			String line = null;
+    			while ((line = reader.readLine()) != null) // Read line by line
+    				sb.append(line + "\n");
 
-        	is.close(); // Close the stream
-            //EntityUtils.consume(response.getEntity());
-			//this.client.close();
-        } catch (ConnectException connectEx) {
-			System.out.printf("%s -> Failed to get Connection %s", Thread.currentThread().getName() ,connectEx.getMessage());
-		} catch (ClientProtocolException ex) {
-			System.out.printf("%s -> Protocol Exception %s", Thread.currentThread().getName() ,ex.getMessage());
-        } catch (IOException ex) {
-        	System.out.printf("%s -> IO Exception %s", Thread.currentThread().getName() ,ex.getMessage());
-        }
-        finally {
-        	runningThreads --;
-        }
+    			String resString = sb.toString(); // Result is here
+    			log.info(resString);
+
+    			is.close(); // Close the stream
+    			//EntityUtils.consume(response.getEntity());
+    			//this.client.close();
+    			shouldRetry = false;
+    		} catch (ConnectException connectEx) {
+    			shouldRetry = ++retryCount < 5;
+    			if (!shouldRetry)
+    				log.error(String.format("%s -> Failed to get Connection %s\r\n", Thread.currentThread().getName() ,connectEx.getMessage()), connectEx);
+    		} catch (ClientProtocolException ex) {
+    			log.error(String.format("%s -> Protocol Exception %s\r\n", Thread.currentThread().getName() ,ex.getMessage()), ex);
+    			shouldRetry = false;
+    		} catch (IOException ex) {
+    			log.error(String.format("%s -> IO Exception %s\r\n", Thread.currentThread().getName() ,ex.getMessage()), ex);
+    			shouldRetry = false;
+    		}
+    		finally {
+    			runningThreads --;
+    		}
+
+    	}
     }
     
     public static int getThreadCount() {
