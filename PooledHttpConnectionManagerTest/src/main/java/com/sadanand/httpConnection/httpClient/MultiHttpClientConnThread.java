@@ -13,6 +13,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -23,6 +25,8 @@ import com.sadanand.httpConnection.Pooling.PooledHttpConnectionManagerTestApplic
 @Scope("prototype")
 public class MultiHttpClientConnThread extends Thread {
 	private static final Logger log = LogManager.getLogger(PooledHttpConnectionManagerTestApplication.class);
+	final static Marker MARKER_WHITESPACE = MarkerManager.getMarker("ANA_WHITESPACE");
+	final static Marker MARKER_WHITESPACE2 = MarkerManager.getMarker("ANA_WHITESPACE2");
 
     private CloseableHttpClient client;
     private HttpGet get;
@@ -59,8 +63,12 @@ public class MultiHttpClientConnThread extends Thread {
     				sb.append(line + "\n");
 
     			String resString = sb.toString(); // Result is here
-    			log.info(resString);
+    			log.info(MARKER_WHITESPACE, resString);
 
+    			log.info(MARKER_WHITESPACE, "With Marker");
+    			log.info(MARKER_WHITESPACE2, "other Marker");
+
+    			
     			is.close(); // Close the stream
     			//EntityUtils.consume(response.getEntity());
     			//this.client.close();
@@ -68,16 +76,17 @@ public class MultiHttpClientConnThread extends Thread {
     		} catch (ConnectException connectEx) {
     			shouldRetry = ++retryCount < 5;
     			if (!shouldRetry)
-    				log.error(String.format("%s -> Failed to get Connection %s\r\n", Thread.currentThread().getName() ,connectEx.getMessage()), connectEx);
+    				log.error(MARKER_WHITESPACE, String.format("%s -> Failed to get Connection %s\r\n", Thread.currentThread().getName() ,connectEx.getMessage()), connectEx);
     		} catch (ClientProtocolException ex) {
-    			log.error(String.format("%s -> Protocol Exception %s\r\n", Thread.currentThread().getName() ,ex.getMessage()), ex);
+    			log.error(MARKER_WHITESPACE, String.format("%s -> Protocol Exception %s\r\n", Thread.currentThread().getName() ,ex.getMessage()), ex);
     			shouldRetry = false;
     		} catch (IOException ex) {
-    			log.error(String.format("%s -> IO Exception %s\r\n", Thread.currentThread().getName() ,ex.getMessage()), ex);
+    			log.error(MARKER_WHITESPACE, String.format("%s -> IO Exception %s\r\n", Thread.currentThread().getName() ,ex.getMessage()), ex);
     			shouldRetry = false;
     		}
     		finally {
     			runningThreads --;
+    			
     		}
 
     	}
